@@ -549,22 +549,27 @@ var printDialog = function (showChars) {
 
     var w = window.open();
 
-    var headers = $("#headers").html();
+    var head = $("#headers").prop("outerHTML");
     var field = $("#print").html();
 
     var html = "<!DOCTYPE HTML>";
     html += '<html lang="en-us">';
-    html += headers;
+    html += head;
     html += "<body>";
     html += field;
     html += "</body>";
+    html += "</html>";
+
     w.document.write(html);
-    w.window.print();
     w.document.close();
 
-    if (!showChars) {
-        $("div.puzzle-field").each(function (index) { $(this).removeClass("hide-char") });
-    }
+    setTimeout(function () {
+        w.focus();
+        w.print();
+        if (!showChars) {
+            $("div.puzzle-field").each(function (index) { $(this).removeClass("hide-char") });
+        }
+    }, 250);
 }
 
 // open buchstaben.com with the given word as a search (with empty cells)
