@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 from multiprocessing import Value, Array
 from ctypes import c_wchar_p
 from io import BytesIO
+import ast
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import black, white
@@ -43,6 +44,14 @@ def _board_state_to_cells(board_value, numbers_value, circles_value):
     return cells
 
 
+def _array_to_list(sync_array):
+    return list(sync_array[:])
+
+
+def _set_array(sync_array, values):
+    sync_array[:] = list(values)
+
+
 def _render_pdf(mode, cells):
     packet = BytesIO()
     page_width, page_height = A4
@@ -74,12 +83,14 @@ def _render_pdf(mode, cells):
                 pdf.circle(x + cell_size / 2, y + cell_size / 2, radius, stroke=1, fill=0)
 
             if not show_solution and cell["number"] > 0:
+                pdf.setFillColor(black)
                 pdf.setFont("Helvetica", max(5, cell_size * 0.18))
                 pdf.drawString(x + cell_size * 0.08, y + cell_size * 0.78, str(cell["number"]))
 
             if show_solution:
                 char = cell["char"].strip()
                 if char:
+                    pdf.setFillColor(black)
                     pdf.setFont("Helvetica-Bold", max(10, cell_size * 0.45))
                     width = pdf.stringWidth(char, "Helvetica-Bold", max(10, cell_size * 0.45))
                     pdf.drawString(x + (cell_size - width) / 2, y + cell_size * 0.27, char)
@@ -96,7 +107,7 @@ def render_pdf(mode):
         return Response("Mode must be 'solution' or 'empty'", status=400)
 
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
-        cells = _board_state_to_cells(board.value, numbers.value, circles.value)
+        cells = _board_state_to_cells(board.value, _array_to_list(numbers), _array_to_list(circles))
 
     pdf_bytes = _render_pdf(mode, cells)
     return Response(
@@ -140,27 +151,27 @@ def sendPuzzleSize():
 def sendBoard():
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
         emit("board", {"board": board.value,
-             "numbers": numbers.value, "circles": circles.value})
+             "numbers": _array_to_list(numbers), "circles": _array_to_list(circles)})
 
 
 @socketio.on("update-board")
 def updateBoard(data):
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
         board.value = data["board"]
-        numbers.value = data["numbers"]
-        circles.value = data["circles"]
-        emit("board", {"board": board.value, "numbers": numbers.value,
-             "circles": circles.value}, broadcast=True)
+        _set_array(numbers, data["numbers"])
+        _set_array(circles, data["circles"])
+        emit("board", {"board": board.value, "numbers": _array_to_list(numbers),
+             "circles": _array_to_list(circles)}, broadcast=True)
 
 
 @socketio.on("server-load")
 def loadPuzzle():
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
         board.value = open("/app/data/board.txt").read()
-        numbers.value = eval(open("/app/data/numbers.txt").read())
-        circles.value = eval(open("/app/data/circles.txt").read())
-        emit("board", {"board": board.value, "numbers": numbers.value,
-             "circles": circles.value}, broadcast=True)
+        _set_array(numbers, ast.literal_eval(open("/app/data/numbers.txt").read()))
+        _set_array(circles, ast.literal_eval(open("/app/data/circles.txt").read()))
+        emit("board", {"board": board.value, "numbers": _array_to_list(numbers),
+             "circles": _array_to_list(circles)}, broadcast=True)
 
 
 @socketio.on("server-store")
@@ -169,9 +180,9 @@ def storePuzzle():
         with open("/app/data/board.txt", "w") as wr:
             wr.write(board.value)
         with open("/app/data/numbers.txt", "w") as wr:
-            wr.write(str(numbers.value))
+            wr.write(str(_array_to_list(numbers)))
         with open("/app/data/circles.txt", "w") as wr:
-            wr.write(str(circles.value))
+            wr.write(str(_array_to_list(circles)))
 
 
 if __name__ == '__main__':
