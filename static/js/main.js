@@ -572,6 +572,11 @@ var printDialog = function (showChars) {
     }, 250);
 }
 
+// render server-side PDF and open it in a new tab
+var renderPdf = function (mode) {
+    window.open('/render-pdf/' + mode, '_blank');
+}
+
 // open buchstaben.com with the given word as a search (with empty cells)
 var openBuchstabenCom = function () {
     var search = "";
