@@ -1,0 +1,21 @@
+services:
+  xword:
+    image: ghcr.io/maede97/xword:latest
+    build: .
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.xword.rule=Host(`xword.hueppis.com`)"
+      - "traefik.http.routers.xword.entrypoints=websecure"
+      - "traefik.http.routers.xword.tls=true"
+      - "traefik.http.routers.xword.tls.certresolver=letsencrypt"
+      - "traefik.http.services.xword.loadbalancer.server.port=5000"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - traefik-proxy
+    restart: unless-stopped
+
+networks:
+  traefik-proxy:
+    external: true

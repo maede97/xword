@@ -2,9 +2,10 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 from multiprocessing import Value, Array
 from ctypes import c_wchar_p
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'CHANGE_THIS'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 
 socketio = SocketIO(app)
 
@@ -69,9 +70,9 @@ def updateBoard(data):
 @socketio.on("server-load")
 def loadPuzzle():
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
-        board.value = open("board.txt").read()
-        numbers.value = eval(open("numbers.txt").read())
-        circles.value = eval(open("circles.txt").read())
+        board.value = open("/app/data/board.txt").read()
+        numbers.value = eval(open("/app/data/numbers.txt").read())
+        circles.value = eval(open("/app/data/circles.txt").read())
         emit("board", {"board": board.value, "numbers": numbers.value,
              "circles": circles.value}, broadcast=True)
 
@@ -79,11 +80,11 @@ def loadPuzzle():
 @socketio.on("server-store")
 def storePuzzle():
     with board.get_lock(), numbers.get_lock(), circles.get_lock():
-        with open("board.txt", "w") as wr:
+        with open("/app/data/board.txt", "w") as wr:
             wr.write(board.value)
-        with open("numbers.txt", "w") as wr:
+        with open("/app/data/numbers.txt", "w") as wr:
             wr.write(str(numbers.value))
-        with open("circles.txt", "w") as wr:
+        with open("/app/data/circles.txt", "w") as wr:
             wr.write(str(circles.value))
 
 
