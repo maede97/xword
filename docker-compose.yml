@@ -10,6 +10,8 @@ services:
       - "traefik.http.routers.xword.tls=true"
       - "traefik.http.routers.xword.tls.certresolver=letsencrypt"
       - "traefik.http.services.xword.loadbalancer.server.port=5000"
+    environment:
+      - PUZZLE_SIZE=15
     volumes:
       - ./data:/app/data
     networks:
