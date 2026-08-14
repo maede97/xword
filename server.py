@@ -15,7 +15,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 socketio = SocketIO(app)
 
 online_users = Value('i', 0)
-puzzle_size = int(os.environ.get('PUZZLE_SIZE', 15))
+_puzzle_size_env = os.environ.get('PUZZLE_SIZE', '15')
+try:
+    puzzle_size = int(_puzzle_size_env)
+    if puzzle_size <= 0:
+        raise ValueError("PUZZLE_SIZE must be a positive integer")
+except ValueError as e:
+    raise ValueError(f"Invalid PUZZLE_SIZE={_puzzle_size_env!r}: {e}") from e
 
 board = Value(c_wchar_p, " " * puzzle_size * puzzle_size)
 numbers = Array('i', [0] * puzzle_size * puzzle_size)
