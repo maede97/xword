@@ -15,7 +15,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 socketio = SocketIO(app)
 
 online_users = Value('i', 0)
-puzzle_size = 15
+puzzle_size = int(os.environ.get('PUZZLE_SIZE', 15))
 
 board = Value(c_wchar_p, " " * puzzle_size * puzzle_size)
 numbers = Array('i', [0] * puzzle_size * puzzle_size)
